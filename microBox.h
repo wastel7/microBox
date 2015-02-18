@@ -8,6 +8,7 @@
 #ifndef _BASHCMD_H_
 #define _BASHCMD_H_
 
+#define __PROG_TYPES_COMPAT__
 #include <Arduino.h>
 
 #define MAX_CMD_NUM 20
