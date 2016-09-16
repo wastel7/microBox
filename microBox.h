@@ -65,7 +65,7 @@ class microBox
 public:
     microBox();
     ~microBox();
-    void begin(PARAM_ENTRY *pParams, const char* hostName, bool localEcho=true, char *histBuf=NULL, int historySize=0);
+	void begin(PARAM_ENTRY *pParams, const char* hostName, bool localEcho = true, char *histBuf = nullptr, int historySize = 0);
     void cmdParser();
     bool isTimeout(unsigned long *lastTime, unsigned long intervall);
     bool AddCommand(const char *cmdName, void (*cmdFunc)(char **param, uint8_t parCnt));
@@ -98,7 +98,7 @@ private:
 	int8_t GetParamIdx(char* pParam, const bool partStr = false, const int8_t startIdx = 0);
     int8_t GetCmdIdx(char* pCmd, int8_t startIdx = 0);
     uint8_t Cat_int(char* pParam);
-    void ListDirHlp(bool dir, bool rw = true, int len=4096);
+	void ListDirHlp(bool dir, bool rw = true, int len = 4096);
 	uint8_t ParCmp(uint8_t idx1, uint8_t idx2, const bool cmd = false);
     void HandleTab();
     void HistoryUp();
