@@ -43,6 +43,7 @@ constexpr unsigned char TELNET_STATE_DO = 4;
 constexpr unsigned char TELNET_STATE_DONT = 5;
 constexpr unsigned char TELNET_STATE_CLOSE = 6;
 
+
 typedef struct
 {
     const char *cmdName;
