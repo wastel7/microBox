@@ -11,37 +11,39 @@
 #define __PROG_TYPES_COMPAT__
 #include <Arduino.h>
 
-#define MAX_CMD_NUM 20
+constexpr unsigned char MAX_CMD_NUM = 20;
 
-#define MAX_CMD_BUF_SIZE 40
-#define MAX_PATH_LEN 10
+constexpr unsigned char MAX_CMD_BUF_SIZE = 40;
+constexpr unsigned char MAX_PATH_LEN = 10;
 
-#define PARTYPE_INT    0x01
-#define PARTYPE_DOUBLE 0x02
-#define PARTYPE_STRING 0x04
-#define PARTYPE_RW     0x10
-#define PARTYPE_RO     0x00
+constexpr unsigned char PARTYPE_INT = 0x01;
+constexpr unsigned char PARTYPE_DOUBLE = 0x02;
+constexpr unsigned char PARTYPE_STRING = 0x04;
+constexpr unsigned char PARTYPE_RW = 0x10;
+constexpr unsigned char PARTYPE_RO = 0x00;
 
-#define ESC_STATE_NONE 0
-#define ESC_STATE_START 1
-#define ESC_STATE_CODE 2
+constexpr unsigned char ESC_STATE_NONE = 0;
+constexpr unsigned char ESC_STATE_START = 1;
+constexpr unsigned char ESC_STATE_CODE = 2;
 
-#define TELNET_IAC 255
-#define TELNET_WILL 251
-#define TELNET_WONT 252
-#define TELNET_DO 253
-#define TELNET_DONT 254
+constexpr unsigned char TELNET_IAC = 255;
+constexpr unsigned char TELNET_WILL = 251;
+constexpr unsigned char TELNET_WONT = 252;
+constexpr unsigned char TELNET_DO = 253;
+constexpr unsigned char TELNET_DONT = 254;
 
-#define TELNET_OPTION_ECHO 1
-#define TELNET_OPTION_SGA 3
+constexpr unsigned char TELNET_OPTION_ECHO = 1;
+constexpr unsigned char TELNET_OPTION_SGA = 3;
 
-#define TELNET_STATE_NORMAL 0
-#define TELNET_STATE_IAC 1
-#define TELNET_STATE_WILL 2
-#define TELNET_STATE_WONT 3
-#define TELNET_STATE_DO 4
-#define TELNET_STATE_DONT 5
-#define TELNET_STATE_CLOSE 6
+constexpr unsigned char TELNET_STATE_NORMAL = 0;
+constexpr unsigned char TELNET_STATE_IAC = 1;
+constexpr unsigned char TELNET_STATE_WILL = 2;
+constexpr unsigned char TELNET_STATE_WONT = 3;
+constexpr unsigned char TELNET_STATE_DO = 4;
+constexpr unsigned char TELNET_STATE_DONT = 5;
+constexpr unsigned char TELNET_STATE_CLOSE = 6;
+
+constexpr unsigned char ERROR = -1;
 
 typedef struct
 {
@@ -65,7 +67,7 @@ class microBox
 public:
     microBox();
     ~microBox();
-    void begin(PARAM_ENTRY *pParams, const char* hostName, bool localEcho=true, char *histBuf=NULL, int historySize=0);
+	void begin(PARAM_ENTRY *pParams, const char* hostName, bool localEcho = true, char *histBuf = nullptr, int historySize = 0);
     void cmdParser();
     bool isTimeout(unsigned long *lastTime, unsigned long intervall);
     bool AddCommand(const char *cmdName, void (*cmdFunc)(char **param, uint8_t parCnt));
@@ -81,12 +83,12 @@ private:
     static void LoadParCB(char **pParam, uint8_t parCnt);
     static void SaveParCB(char **pParam, uint8_t parCnt);
 
-    void ListDir(char **pParam, uint8_t parCnt, bool listLong=false);
-    void ChangeDir(char **pParam, uint8_t parCnt);
+	void ListDir(char **pParam, const uint8_t parCnt, const bool listLong = false);
+	void ChangeDirectory(char **pParam, uint8_t parCnt);
     void Echo(char **pParam, uint8_t parCnt);
     void Cat(char** pParam, uint8_t parCnt);
-    void watch(char** pParam, uint8_t parCnt);
-    void watchcsv(char** pParam, uint8_t parCnt);
+	void watch(char** pParam, const uint8_t parCnt);
+	void watchcsv(char** pParam, const uint8_t parCnt);
 
 private:
     void ShowPrompt();
@@ -94,23 +96,23 @@ private:
     void ErrorDir(const __FlashStringHelper *cmd);
     char *GetDir(char *pParam, bool useFile);
     char *GetFile(char *pParam);
-    void PrintParam(uint8_t idx);
-    int8_t GetParamIdx(char* pParam, bool partStr = false, int8_t startIdx = 0);
+	void PrintParam(const uint8_t idx);
+	int8_t GetParamIdx(char* pParam, const bool partStr = false, const int8_t startIdx = 0);
     int8_t GetCmdIdx(char* pCmd, int8_t startIdx = 0);
     uint8_t Cat_int(char* pParam);
-    void ListDirHlp(bool dir, bool rw = true, int len=4096);
-    uint8_t ParCmp(uint8_t idx1, uint8_t idx2, bool cmd=false);
+	void ListDirHlp(bool dir, bool rw = true, int len = 4096);
+	uint8_t ParCmp(uint8_t idx1, uint8_t idx2, const bool cmd = false);
     void HandleTab();
     void HistoryUp();
     void HistoryDown();
     void HistoryPrintHlpr();
-    void AddToHistory(char *buf);
+	void AddToHistory(char *buffer);
     void ExecCommand();
     void handleTelnet(uint8_t ch);
     void sendTelnetOpt(uint8_t option, uint8_t value);
     double parseFloat(char *pBuf);
-    bool HandleEscSeq(unsigned char ch);
-    void ReadWriteParamEE(bool write);
+    bool HandleEscSeq(unsigned char character);
+	void ReadWriteParamEE(const bool write);
 
 private:
     char currentDir[MAX_PATH_LEN];
@@ -118,14 +120,14 @@ private:
     char cmdBuf[MAX_CMD_BUF_SIZE];
     char dirBuf[15];
     char *ParmPtr[10];
-    uint8_t bufPos;
+	uint8_t bufferPosition;
     bool watchMode;
     bool csvMode;
     uint8_t escSeq;
     unsigned long watchTimeout;
     const char* machName;
     int historyBufSize;
-    char *historyBuf;
+	char *historyBuffer;
     int historyWrPos;
     int historyCursorPos;
     bool locEcho;

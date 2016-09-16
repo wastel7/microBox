@@ -23,7 +23,7 @@ CMD_ENTRY microBox::Cmds[] =
     {"savepar", microBox::SaveParCB},
     {"watch", microBox::watchCB},
     {"watchcsv", microBox::watchcsvCB},
-    {NULL, NULL}
+	{nullptr, nullptr}
 };
 
 const char microBox::dirList[][5] PROGMEM =
@@ -33,7 +33,7 @@ const char microBox::dirList[][5] PROGMEM =
 
 microBox::microBox()
 {
-    bufPos = 0;
+	bufferPosition = 0;
     watchMode = false;
     csvMode = false;
     locEcho = false;
@@ -41,28 +41,34 @@ microBox::microBox()
     escSeq = 0;
     historyWrPos = 0;
     historyBufSize = 0;
-    historyCursorPos = -1;
+	historyCursorPos = ;
     stateTelnet = TELNET_STATE_NORMAL;
 }
 
 microBox::~microBox()
 {
+	delete[] dirBuf;
+	delete[] ParmPtr;
+	delete[] machName;
+	if (historyBuffer != nullptr) {
+		delete historyBuffer;
+	}
 }
 
 void microBox::begin(PARAM_ENTRY *pParams, const char* hostName, bool localEcho, char *histBuf, int historySize)
 {
-    historyBuf = histBuf;
-    if(historyBuf != NULL && historySize != 0)
+	historyBuffer = histBuf;
+	if(historyBuffer != nullptr && historySize != 0)
     {
         historyBufSize = historySize;
-        historyBuf[0] = 0;
-        historyBuf[1] = 0;
+		historyBuffer[0] = 0;
+		historyBuffer[1] = 0;
     }
 
     locEcho = localEcho;
     Params = pParams;
     machName = hostName;
-    ParmPtr[0] = NULL;
+	ParmPtr[0] = nullptr;
     strcpy(currentDir, "/");
     ShowPrompt();
 }
@@ -71,30 +77,28 @@ bool microBox::AddCommand(const char *cmdName, void (*cmdFunc)(char **param, uin
 {
     uint8_t idx = 0;
 
-    while((Cmds[idx].cmdFunc != NULL) && (idx < (MAX_CMD_NUM-1)))
+	while((Cmds[idx].cmdFunc != nullptr) && (idx < (MAX_CMD_NUM-1)))
     {
-        idx++;
+		++idx;
     }
-    if(idx < (MAX_CMD_NUM-1))
+	if(idx < (MAX_CMD_NUM-1))
     {
         Cmds[idx].cmdName = cmdName;
         Cmds[idx].cmdFunc = cmdFunc;
-        idx++;
-        Cmds[idx].cmdFunc = NULL;
-        Cmds[idx].cmdName = NULL;
+		++idx;
+		Cmds[idx].cmdFunc = nullptr;
+		Cmds[idx].cmdName = nullptr;
         return true;
     }
     return false;
 }
 
-bool microBox::isTimeout(unsigned long *lastTime, unsigned long intervall)
+bool microBox::isTimeout(unsigned long &lastTime, const unsigned long intervall)
 {
-    unsigned long m;
-
-    m = millis();
-    if(((m - *lastTime) >= intervall) || (*lastTime > m))
+	const unsigned long milliseconds = millis();
+	if(((milliseconds - lastTime) >= intervall) || (lastTime > milliseconds))
     {
-        *lastTime = m;
+		lastTime = milliseconds;
         return true;
     }
     return false;
@@ -114,13 +118,13 @@ uint8_t microBox::ParseCmdParams(char *pParam)
     uint8_t idx = 0;
 
     ParmPtr[idx] = pParam;
-    if(pParam != NULL)
+	if(pParam != nullptr)
     {
-        idx++;
-        while((pParam = strchr(pParam, ' ')) != NULL)
+		++idx;
+		while((pParam = strchr(pParam, ' ')) != nullptr)
         {
             pParam[0] = 0;
-            pParam++;
+			++pParam;
             ParmPtr[idx++] = pParam;
         }
     }
@@ -131,44 +135,44 @@ void microBox::ExecCommand()
 {
     bool found = false;
     Serial.println();
-    if(bufPos > 0)
+	if(bufferPosition > 0)
     {
-        uint8_t i=0;
+		uint8_t index = 0;
         uint8_t dstlen;
         uint8_t srclen;
         char *pParam;
 
-        cmdBuf[bufPos] = 0;
+		cmdBuf[bufferPosition] = 0;
         pParam = strchr(cmdBuf, ' ');
-        if(pParam != NULL)
+		if(pParam != nullptr)
         {
-            pParam++;
+			++pParam;
             srclen = pParam - cmdBuf - 1;
         }
         else
-            srclen = bufPos;
+			srclen = bufferPosition;
 
         AddToHistory(cmdBuf);
         historyCursorPos = -1;
 
-        while(Cmds[i].cmdName != NULL && found == false)
+		while(Cmds[index].cmdName != nullptr && found == false)
         {
-            dstlen = strlen(Cmds[i].cmdName);
+			dstlen = strlen(Cmds[index].cmdName);
             if(dstlen == srclen)
             {
-                if(strncmp(cmdBuf, Cmds[i].cmdName, dstlen) == 0)
+				if(strncmp(cmdBuf, Cmds[index].cmdName, dstlen) == 0)
                 {
-                    (*Cmds[i].cmdFunc)(ParmPtr, ParseCmdParams(pParam));
+					(*Cmds[index].cmdFunc)(ParmPtr, ParseCmdParams(pParam));
                     found = true;
-                    bufPos = 0;
+					bufferPosition = 0;
                     ShowPrompt();
                 }
             }
-            i++;
+			++index;
         }
         if(!found)
         {
-            bufPos = 0;
+			bufferPosition = 0;
             ErrorDir(F("/bin/sh"));
             ShowPrompt();
         }
@@ -196,24 +200,24 @@ void microBox::cmdParser()
     }
     while(Serial.available())
     {
-        uint8_t ch;
-        ch = Serial.read();
-        if(ch == TELNET_IAC || stateTelnet != TELNET_STATE_NORMAL)
+		uint8_t character;
+		character = Serial.read();
+		if(character == TELNET_IAC || stateTelnet != TELNET_STATE_NORMAL)
         {
-            handleTelnet(ch);
+			handleTelnet(character);
             continue;
         }
 
-        if(HandleEscSeq(ch))
+		if(HandleEscSeq(character))
             continue;
 
-        if(ch == 0x7F || ch == 0x08)
+		if(character == 0x7F || character == 0x08)
         {
-            if(bufPos > 0)
+			if(bufferPosition > 0)
             {
-                bufPos--;
-                cmdBuf[bufPos] = 0;
-                Serial.write(ch);
+				--bufferPosition;
+				cmdBuf[bufferPosition] = 0;
+				Serial.write(character);
                 Serial.print(F(" \x1B[1D"));
             }
             else
@@ -221,18 +225,18 @@ void microBox::cmdParser()
                 Serial.print(F("\a"));
             }
         }
-        else if(ch == '\t')
+		else if(character == '\t')
         {
             HandleTab();
         }
-        else if(ch != '\r' && bufPos < (MAX_CMD_BUF_SIZE-1))
+		else if(character != '\r' && bufferPosition < (MAX_CMD_BUF_SIZE - 1))
         {
-            if(ch != '\n')
+			if(character != '\n')
             {
                 if(locEcho)
-                    Serial.write(ch);
-                cmdBuf[bufPos++] = ch;
-                cmdBuf[bufPos] = 0;
+					Serial.write(character);
+				cmdBuf[bufferPosition++] = character;
+				cmdBuf[bufferPosition] = 0;
             }
         }
         else
@@ -242,53 +246,53 @@ void microBox::cmdParser()
     }
 }
 
-bool microBox::HandleEscSeq(unsigned char ch)
+bool microBox::HandleEscSeq(unsigned char character)
 {
-    bool ret = false;
+	bool result = false;
 
-    if(ch == 27)
+	if(character == 27)
     {
         escSeq = ESC_STATE_START;
-        ret = true;
+		result = true;
     }
     else if(escSeq == ESC_STATE_START)
     {
-        if(ch == 0x5B)
+		if(character == 0x5B)
         {
             escSeq = ESC_STATE_CODE;
-            ret = true;
+			result = true;
         }
         else
             escSeq = ESC_STATE_NONE;
     }
     else if(escSeq == ESC_STATE_CODE)
     {
-        if(ch == 0x41) // Cursor Up
+		if(character == 0x41) // Cursor Up
         {
             HistoryUp();
         }
-        else if(ch == 0x42) // Cursor Down
+		else if(character == 0x42) // Cursor Down
         {
             HistoryDown();
         }
-        else if(ch == 0x43) // Cursor Right
+		else if(character == 0x43) // Cursor Right
         {
         }
-        else if(ch == 0x44) // Cursor Left
+		else if(character == 0x44) // Cursor Left
         {
         }
         escSeq = ESC_STATE_NONE;
-        ret = true;
+		result = true;
     }
-    return ret;
+	return result;
 }
 
-uint8_t microBox::ParCmp(uint8_t idx1, uint8_t idx2, bool cmd)
+uint8_t microBox::ParCmp(uint8_t idx1, uint8_t idx2, const bool cmd)
 {
-    uint8_t i=0;
+	uint8_t index = 0;
 
     const char *pName1;
-    const char *pName2;
+	const char *pName2;
 
     if(cmd)
     {
@@ -301,43 +305,43 @@ uint8_t microBox::ParCmp(uint8_t idx1, uint8_t idx2, bool cmd)
         pName2 = Params[idx2].paramName;
     }
 
-    while(pName1[i] != 0 && pName2[i] != 0)
+	while(pName1[index] != 0 && pName2[index] != 0)
     {
-        if(pName1[i] != pName2[i])
-            return i;
-        i++;
+		if(pName1[index] != pName2[index])
+			return index;
+		++index;
     }
-    return i;
+	return index;
 }
 
 int8_t microBox::GetCmdIdx(char* pCmd, int8_t startIdx)
 {
-    while(Cmds[startIdx].cmdName != NULL)
+	while(Cmds[startIdx].cmdName != nullptr)
     {
         if(strncmp(Cmds[startIdx].cmdName, pCmd, strlen(pCmd)) == 0)
         {
             return startIdx;
         }
-        startIdx++;
+		++startIdx;
     }
-    return -1;
+	return ERROR;
 }
 
 void microBox::HandleTab()
 {
     int8_t idx, idx2;
-    char *pParam = NULL;
-    uint8_t i, len = 0;
+	char *pParam = nullptr;
+	uint8_t i, length = 0;
     uint8_t parlen, matchlen, inlen;
 
-    for(i=0;i<bufPos;i++)
+	for(i=0; i < bufferPosition; i++)
     {
         if(cmdBuf[i] == ' ')
-            pParam = cmdBuf+i;
+			pParam = cmdBuf + i;
     }
-    if(pParam != NULL)
+	if(pParam != nullptr)
     {
-        pParam++;
+		++pParam;
         if(*pParam != 0)
         {
             idx = GetParamIdx(pParam, true, 0);
@@ -345,8 +349,8 @@ void microBox::HandleTab()
             {
                 parlen = strlen(Params[idx].paramName);
                 matchlen = parlen;
-                idx2=idx;
-                while((idx2=GetParamIdx(pParam, true, idx2+1))!= -1)
+				idx2 = idx;
+				while((idx2 = GetParamIdx(pParam, true, idx2 + 1)) != ERROR)
                 {
                     matchlen = ParCmp(idx, idx2);
                     if(matchlen < parlen)
@@ -356,19 +360,19 @@ void microBox::HandleTab()
                 inlen = strlen(pParam);
                 if(matchlen > inlen)
                 {
-                    len = matchlen - inlen;
-                    if((bufPos + len) < MAX_CMD_BUF_SIZE)
+					length = matchlen - inlen;
+					if((bufferPosition + length) < MAX_CMD_BUF_SIZE)
                     {
-                        strncat(cmdBuf, Params[idx].paramName + inlen, len);
-                        bufPos += len;
+						strncat(cmdBuf, Params[idx].paramName + inlen, length);
+						bufferPosition += length;
                     }
                     else
-                        len = 0;
+						length = 0;
                 }
             }
         }
     }
-    else if(bufPos)
+	else if(bufferPosition)
     {
         pParam = cmdBuf;
 
@@ -377,8 +381,8 @@ void microBox::HandleTab()
         {
             parlen = strlen(Cmds[idx].cmdName);
             matchlen = parlen;
-            idx2=idx;
-            while((idx2=GetCmdIdx(pParam, idx2+1))!= -1)
+			idx2 = idx;
+			while((idx2 = GetCmdIdx(pParam, idx2+1)) != ERROR)
             {
                 matchlen = ParCmp(idx, idx2, true);
                 if(matchlen < parlen)
@@ -387,18 +391,18 @@ void microBox::HandleTab()
             inlen = strlen(pParam);
             if(matchlen > inlen)
             {
-                len = matchlen - inlen;
-                if((bufPos + len) < MAX_CMD_BUF_SIZE)
+				length = matchlen - inlen;
+				if((bufferPosition + length) < MAX_CMD_BUF_SIZE)
                 {
-                    strncat(cmdBuf, Cmds[idx].cmdName + inlen, len);
-                    bufPos += len;
+					strncat(cmdBuf, Cmds[idx].cmdName + inlen, length);
+					bufferPosition += length;
                 }
                 else
-                    len = 0;
+					length = 0;
             }
         }
     }
-    if(len > 0)
+	if(length > 0)
     {
         Serial.print(pParam + inlen);
     }
@@ -410,16 +414,16 @@ void microBox::HistoryUp()
         return;
 
     if(historyCursorPos == -1)
-        historyCursorPos = historyWrPos-2;
+		historyCursorPos = historyWrPos - 2;
 
-    while(historyBuf[historyCursorPos] != 0 && historyCursorPos > 0)
+	while(historyBuffer[historyCursorPos] != 0 && historyCursorPos > 0)
     {
-        historyCursorPos--;
+		--historyCursorPos;
     }
     if(historyCursorPos > 0)
-        historyCursorPos++;
+		++historyCursorPos;
 
-    strcpy(cmdBuf, historyBuf+historyCursorPos);
+	strcpy(cmdBuf, historyBuffer+historyCursorPos);
     HistoryPrintHlpr();
     if(historyCursorPos > 1)
         historyCursorPos -= 2;
@@ -427,54 +431,50 @@ void microBox::HistoryUp()
 
 void microBox::HistoryDown()
 {
-    int pos;
+	int position;
     if(historyCursorPos != -1 && historyCursorPos != historyWrPos-2)
     {
-        pos = historyCursorPos+2;
-        pos += strlen(historyBuf+pos) + 1;
+		position = historyCursorPos + 2;
+		position += strlen(historyBuffer+position) + 1;
 
-        strcpy(cmdBuf, historyBuf+pos);
+		strcpy(cmdBuf, historyBuffer + position);
         HistoryPrintHlpr();
-        historyCursorPos = pos - 2;
+		historyCursorPos = position - 2;
     }
 }
 
 void microBox::HistoryPrintHlpr()
 {
-    uint8_t i;
-    uint8_t len;
-
-    len = strlen(cmdBuf);
-    for(i=0;i<bufPos;i++)
+	uint8_t length = strlen(cmdBuf);
+	for(uint8_t i = 0; i < bufferPosition; ++i)
         Serial.print('\b');
     Serial.print(cmdBuf);
-    if(len<bufPos)
+	if(length<bufferPosition)
     {
         Serial.print(F("\x1B[K"));
     }
-    bufPos = len;
+	bufferPosition = length;
 }
 
-void microBox::AddToHistory(char *buf)
+void microBox::AddToHistory(char *buffer)
 {
-    uint8_t len;
     int blockStart = 0;
 
-    len = strlen(buf);
+	const uint8_t length; = strlen(buffer);
     if(historyBufSize > 0)
     {
-        if(historyWrPos+len+1 >= historyBufSize)
+		if(historyWrPos + length + 1 >= historyBufSize)
         {
-            while(historyWrPos+len-blockStart >= historyBufSize)
+			while(historyWrPos + length-blockStart >= historyBufSize)
             {
-                blockStart += strlen(historyBuf + blockStart) + 1;
+				blockStart += strlen(historyBuffer + blockStart) + 1;
             }
-            memmove(historyBuf, historyBuf+blockStart, historyWrPos-blockStart);
+			memmove(historyBuffer, historyBuffer + blockStart, historyWrPos - blockStart);
             historyWrPos -= blockStart;
         }
-        strcpy(historyBuf+historyWrPos, buf);
-        historyWrPos += len+1;
-        historyBuf[historyWrPos] = 0;
+		strcpy(historyBuffer+historyWrPos, buffer);
+		historyWrPos += length + 1;
+		historyBuffer[historyWrPos] = 0;
     }
 }
 
@@ -489,18 +489,18 @@ void microBox::sendTelnetOpt(uint8_t option, uint8_t value)
     Serial.write(tmp, 4);
 }
 
-void microBox::handleTelnet(uint8_t ch)
+void microBox::handleTelnet(uint8_t character)
 {
     switch (stateTelnet)
     {
     case TELNET_STATE_IAC:
-        if(ch == TELNET_IAC)
+		if(character == TELNET_IAC)
         {
             stateTelnet = TELNET_STATE_NORMAL;
         }
         else
         {
-            switch(ch)
+			switch(character)
             {
             case TELNET_WILL:
                 stateTelnet = TELNET_STATE_WILL;
@@ -521,32 +521,32 @@ void microBox::handleTelnet(uint8_t ch)
         }
         break;
     case TELNET_STATE_WILL:
-        sendTelnetOpt(TELNET_DONT, ch);
+		sendTelnetOpt(TELNET_DONT, character);
         stateTelnet = TELNET_STATE_NORMAL;
         break;
     case TELNET_STATE_WONT:
-        sendTelnetOpt(TELNET_DONT, ch);
+		sendTelnetOpt(TELNET_DONT, character);
         stateTelnet = TELNET_STATE_NORMAL;
         break;
     case TELNET_STATE_DO:
-        if(ch == TELNET_OPTION_ECHO)
+		if(character == TELNET_OPTION_ECHO)
         {
-            sendTelnetOpt(TELNET_WILL, ch);
-            sendTelnetOpt(TELNET_DO, ch);
+			sendTelnetOpt(TELNET_WILL, character);
+			sendTelnetOpt(TELNET_DO, character);
             locEcho = true;
         }
-        else if(ch == TELNET_OPTION_SGA)
-            sendTelnetOpt(TELNET_WILL, ch);
+		else if(character == TELNET_OPTION_SGA)
+			sendTelnetOpt(TELNET_WILL, character);
         else
-            sendTelnetOpt(TELNET_WONT, ch);
+			sendTelnetOpt(TELNET_WONT, character);
         stateTelnet = TELNET_STATE_NORMAL;
         break;
     case TELNET_STATE_DONT:
-        sendTelnetOpt(TELNET_WONT, ch);
+		sendTelnetOpt(TELNET_WONT, character);
         stateTelnet = TELNET_STATE_NORMAL;
         break;
     case TELNET_STATE_NORMAL:
-        if(ch == TELNET_IAC)
+		if(character == TELNET_IAC)
         {
             stateTelnet = TELNET_STATE_IAC;
         }
@@ -563,20 +563,20 @@ void microBox::ErrorDir(const __FlashStringHelper *cmd)
 
 char *microBox::GetDir(char *pParam, bool useFile)
 {
-    uint8_t i=0;
-    uint8_t len;
+	uint8_t index = 0;
+	uint8_t length;
     char *tmp;
 
     dirBuf[0] = 0;
-    if(pParam != NULL)
+	if(pParam != nullptr)
     {
         if(currentDir[1] != 0)
         {
             if(pParam[0] != '/')
             {
-                if(!(pParam[0] == '.' && pParam[1] == '.'))
+				if( !(pParam[0] == '.' && pParam[1] == '.') )
                 {
-                    return NULL;
+					return nullptr;
                 }
                 else
                 {
@@ -587,7 +587,7 @@ char *microBox::GetDir(char *pParam, bool useFile)
                         dirBuf[1] = 0;
                     }
                     else if(pParam[0] != '/')
-                        return NULL;
+						return nullptr;
                 }
             }
         }
@@ -603,42 +603,42 @@ char *microBox::GetDir(char *pParam, bool useFile)
 
         if((tmp=strchr(pParam, '/')) != 0)
         {
-            len = tmp-pParam;
+			length = tmp - pParam;
         }
         else
-            len = strlen(pParam);
-        if(len > 0)
+			length = strlen(pParam);
+		if(length > 0)
         {
-            while(pgm_read_byte_near(&dirList[i][0]) != 0)
+			while(pgm_read_byte_near(&dirList[index][0]) != 0)
             {
-                if(strncmp_P(pParam, dirList[i], len) == 0)
+				if(strncmp_P(pParam, dirList[index], length) == 0)
                 {
-                    if(strlen_P(dirList[i]) == len)
+					if(strlen_P(dirList[index]) == length)
                     {
                         dirBuf[0] = '/';
                         dirBuf[1] = 0;
-                        strcat_P(dirBuf, dirList[i]);
+						strcat_P(dirBuf, dirList[index]);
                         return dirBuf;
                     }
                 }
-                i++;
+				++index;
             }
         }
     }
     if(dirBuf[0] != 0)
         return dirBuf;
-    return NULL;
+	return nullptr;
 }
 
 char *microBox::GetFile(char *pParam)
 {
     char *file;
-    char *t;
+	char *character;
 
     file = pParam;
-    while((t=strchr(file, '/')) != NULL)
+	while((character = strchr(file, '/')) != nullptr)
     {
-        file = t+1;
+		file = character + 1;
     }
     return file;
 }
@@ -667,15 +667,15 @@ void microBox::ListDirHlp(bool dir, bool rw, int len)
     Serial.print(F(" "));
 }
 
-void microBox::ListDir(char **pParam, uint8_t parCnt, bool listLong)
+void microBox::ListDir(char **pParam, const uint8_t parCnt, const bool listLong)
 {
-    uint8_t i=0;
-    char *dir;
+	uint8_t index = 0;
+	char *directory;
 
     if(parCnt != 0)
     {
-        dir = GetDir(pParam[0], false);
-        if(dir == NULL)
+		directory = GetDir(pParam[0], false);
+		if(directory == nullptr)
         {
             if(listLong)
                 ErrorDir(F("ll"));
@@ -686,79 +686,79 @@ void microBox::ListDir(char **pParam, uint8_t parCnt, bool listLong)
     }
     else
     {
-        dir = currentDir;
+		directory = currentDir;
     }
 
-    if(dir[1] == 0)
+	if(directory[1] == 0)
     {
-        while(pgm_read_byte_near(&dirList[i][0]) != 0)
+		while(pgm_read_byte_near(&dirList[index][0]) != 0)
         {
             if(listLong)
             {
                 ListDirHlp(true);
             }
-            Serial.print((__FlashStringHelper*)dirList[i]);
+			Serial.print((__FlashStringHelper*) dirList[index]);
             if(listLong)
                 Serial.println();
             else
                 Serial.print(F("\t"));
-            i++;
+			++index;
         }
         Serial.println();
     }
-    else if(strcmp_P(dir, PSTR("/bin")) == 0)
+	else if(strcmp_P(directory, PSTR("/bin")) == 0)
     {
-        while(Cmds[i].cmdName != NULL)
+		while(Cmds[index].cmdName != nullptr)
         {
             if(listLong)
             {
                 ListDirHlp(false);
             }
-            Serial.println(Cmds[i].cmdName);
-            i++;
+			Serial.println(Cmds[index].cmdName);
+			++index;
         }
     }
-    else if(strcmp_P(dir, PSTR("/dev")) == 0)
+	else if(strcmp_P(directory, PSTR("/dev")) == 0)
     {
-        while(Params[i].paramName != NULL)
+		while(Params[index].paramName != nullptr)
         {
             if(listLong)
             {
                 uint8_t size;
-                if(Params[i].parType&PARTYPE_INT)
+				if(Params[index].parType & PARTYPE_INT)
                     size=sizeof(int);
-                else if(Params[i].parType&PARTYPE_DOUBLE)
+				else if(Params[index].parType & PARTYPE_DOUBLE)
                     size = sizeof(double);
                 else
-                    size = Params[i].len;
+					size = Params[index].len;
 
-                ListDirHlp(false, Params[i].parType&PARTYPE_RW, size);
+				ListDirHlp(false, Params[index].parType & PARTYPE_RW, size);
             }
-            Serial.println(Params[i].paramName);
-            i++;
+			Serial.println(Params[index].paramName);
+			++index;
         }
     }
 }
 
-void microBox::ChangeDir(char **pParam, uint8_t parCnt)
+void microBox::ChangeDirectory(char **pParam, uint8_t parCnt)
 {
-    char *dir;
+	char *directory;
 
-    if(pParam[0] != NULL)
+	if(pParam[0] != nullptr)
     {
-        dir = GetDir(pParam[0], false);
-        if(dir != NULL)
+		directory = GetDir(pParam[0], false);
+		if(directory != nullptr)
         {
-            strcpy(currentDir, dir);
+			strcpy(currentDir, directory);
             return;
         }
     }
     ErrorDir(F("cd"));
 }
 
-void microBox::PrintParam(uint8_t idx)
+void microBox::PrintParam(const uint8_t idx)
 {
-    if(Params[idx].getFunc != NULL)
+	if(Params[idx].getFunc != nullptr)
         (*Params[idx].getFunc)(Params[idx].id);
 
     if(Params[idx].parType&PARTYPE_INT)
@@ -774,25 +774,25 @@ void microBox::PrintParam(uint8_t idx)
         Serial.println();
 }
 
-int8_t microBox::GetParamIdx(char* pParam, bool partStr, int8_t startIdx)
+int8_t microBox::GetParamIdx(char* pParam, const bool partStr, const int8_t startIdx)
 {
-    int8_t i=startIdx;
+	int8_t i = startIdx;
     char *dir;
     char *file;
 
-    if(pParam != NULL)
+	if(pParam != nullptr)
     {
         dir = GetDir(pParam, true);
-        if(dir == NULL)
+		if(dir == nullptr)
             dir = currentDir;
-        if(dir != NULL)
+		if(dir != nullptr)
         {
             if(strcmp_P(dir, PSTR("/dev")) == 0)
             {
                 file = GetFile(pParam);
-                if(file != NULL)
+				if(file != nullptr)
                 {
-                    while(Params[i].paramName != NULL)
+					while(Params[i].paramName != nullptr)
                     {
                         if(partStr)
                         {
@@ -808,46 +808,46 @@ int8_t microBox::GetParamIdx(char* pParam, bool partStr, int8_t startIdx)
                                 return i;
                             }
                         }
-                        i++;
+						++i;
                     }
                 }
             }
         }
     }
-    return -1;
+	return ERROR
 }
 
 // Taken from Stream.cpp
 double microBox::parseFloat(char *pBuf)
 {
-    boolean isNegative = false;
-    boolean isFraction = false;
+	bool isNegative = false;
+	bool isFraction = false;
     long value = 0;
-    unsigned char c;
+	unsigned char character;
     double fraction = 1.0;
     uint8_t idx = 0;
 
-    c = pBuf[idx++];
+	character = pBuf[idx++];
     // ignore non numeric leading characters
-    if(c > 127)
+	if(character > 127)
         return 0; // zero returned if timeout
 
-    do{
-        if(c == '-')
+	do {
+		if(character == '-')
             isNegative = true;
-        else if (c == '.')
+		else if (character == '.')
             isFraction = true;
-        else if(c >= '0' && c <= '9')  {      // is c a digit?
-            value = value * 10 + c - '0';
+		else if(character >= '0' && character <= '9')  {      // is c a digit?
+			value = value * 10 + character - '0';
             if(isFraction)
                 fraction *= 0.1;
         }
-        c = pBuf[idx++];
+		character = pBuf[idx++];
     }
-    while( (c >= '0' && c <= '9')  || c == '.');
+	while( (character >= '0' && character <= '9')  || character == '.');
 
     if(isNegative)
-        value = -value;
+		value -= value;
     if(isFraction)
         return value * fraction;
     else
@@ -862,7 +862,7 @@ void microBox::Echo(char **pParam, uint8_t parCnt)
     if((parCnt == 3) && (strcmp_P(pParam[1], PSTR(">")) == 0))
     {
         idx = GetParamIdx(pParam[2]);
-        if(idx != -1)
+		if(idx != ERROR)
         {
             if(Params[idx].parType & PARTYPE_RW)
             {
@@ -885,7 +885,7 @@ void microBox::Echo(char **pParam, uint8_t parCnt)
                     if(strlen(pParam[0]) < Params[idx].len)
                         strcpy((char*)Params[idx].pParam, pParam[0]);
                 }
-                if(Params[idx].setFunc != NULL)
+				if(Params[idx].setFunc != nullptr)
                     (*Params[idx].setFunc)(Params[idx].id);
             }
             else
@@ -917,7 +917,7 @@ uint8_t microBox::Cat_int(char* pParam)
     int8_t idx;
 
     idx = GetParamIdx(pParam);
-    if(idx != -1)
+	if(idx != ERROR)
     {
         PrintParam(idx);
         return 1;
@@ -928,7 +928,7 @@ uint8_t microBox::Cat_int(char* pParam)
     return 0;
 }
 
-void microBox::watch(char** pParam, uint8_t parCnt)
+void microBox::watch(char** pParam, const uint8_t parCnt)
 {
     if(parCnt == 2)
     {
@@ -943,34 +943,34 @@ void microBox::watch(char** pParam, uint8_t parCnt)
     }
 }
 
-void microBox::watchcsv(char** pParam, uint8_t parCnt)
+void microBox::watchcsv(char** pParam, const uint8_t parCnt)
 {
     watch(pParam, parCnt);
     if(watchMode)
         csvMode = true;
 }
 
-void microBox::ReadWriteParamEE(bool write)
+void microBox::ReadWriteParamEE(const bool write)
 {
-    uint8_t i=0;
+	uint8_t i = 0;
     uint8_t psize;
-    int pos=0;
+	int position = 0;
 
-    while(Params[i].paramName != NULL)
+	while(Params[i].paramName != nullptr)
     {
-        if(Params[i].parType&PARTYPE_INT)
+		if(Params[i].parType & PARTYPE_INT)
             psize = sizeof(uint16_t);
-        else if(Params[i].parType&PARTYPE_DOUBLE)
+		else if(Params[i].parType & PARTYPE_DOUBLE)
             psize = sizeof(double);
         else
             psize = Params[i].len;
 
         if(write)
-            eeprom_write_block(Params[i].pParam, (void*)pos, psize);
+			eeprom_write_block(Params[i].pParam, (void*)position, psize);
         else
-            eeprom_read_block(Params[i].pParam, (void*)pos, psize);
-        pos += psize;
-        i++;
+			eeprom_read_block(Params[i].pParam, (void*)position, psize);
+		position += psize;
+		++i;
     }
 }
 
@@ -986,7 +986,7 @@ void microBox::ListLongCB(char **pParam, uint8_t parCnt)
 
 void microBox::ChangeDirCB(char **pParam, uint8_t parCnt)
 {
-    microbox.ChangeDir(pParam, parCnt);
+	microbox.ChangeDirectory(pParam, parCnt);
 }
 
 void microBox::EchoCB(char **pParam, uint8_t parCnt)
