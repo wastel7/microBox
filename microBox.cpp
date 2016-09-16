@@ -41,7 +41,7 @@ microBox::microBox()
     escSeq = 0;
     historyWrPos = 0;
     historyBufSize = 0;
-    historyCursorPos = -1;
+	historyCursorPos = ;
     stateTelnet = TELNET_STATE_NORMAL;
 }
 
@@ -81,7 +81,7 @@ bool microBox::AddCommand(const char *cmdName, void (*cmdFunc)(char **param, uin
     {
 		++idx;
     }
-    if(idx < (MAX_CMD_NUM-1))
+	if(idx < (MAX_CMD_NUM-1))
     {
         Cmds[idx].cmdName = cmdName;
         Cmds[idx].cmdFunc = cmdFunc;
@@ -326,7 +326,7 @@ int8_t microBox::GetCmdIdx(char* pCmd, int8_t startIdx)
         }
 		++startIdx;
     }
-    return -1;
+	return ERROR;
 }
 
 void microBox::HandleTab()
@@ -352,7 +352,7 @@ void microBox::HandleTab()
                 parlen = strlen(Params[idx].paramName);
                 matchlen = parlen;
 				idx2 = idx;
-				while((idx2 = GetParamIdx(pParam, true, idx2 + 1)) != -1)
+				while((idx2 = GetParamIdx(pParam, true, idx2 + 1)) != ERROR)
                 {
                     matchlen = ParCmp(idx, idx2);
                     if(matchlen < parlen)
@@ -384,7 +384,7 @@ void microBox::HandleTab()
             parlen = strlen(Cmds[idx].cmdName);
             matchlen = parlen;
 			idx2 = idx;
-			while((idx2 = GetCmdIdx(pParam, idx2+1)) != -1)
+			while((idx2 = GetCmdIdx(pParam, idx2+1)) != ERROR)
             {
                 matchlen = ParCmp(idx, idx2, true);
                 if(matchlen < parlen)
@@ -819,7 +819,7 @@ int8_t microBox::GetParamIdx(char* pParam, const bool partStr, const int8_t star
             }
         }
     }
-    return -1;
+	return ERROR
 }
 
 // Taken from Stream.cpp
@@ -867,7 +867,7 @@ void microBox::Echo(char **pParam, uint8_t parCnt)
     if((parCnt == 3) && (strcmp_P(pParam[1], PSTR(">")) == 0))
     {
         idx = GetParamIdx(pParam[2]);
-        if(idx != -1)
+		if(idx != ERROR)
         {
             if(Params[idx].parType & PARTYPE_RW)
             {
@@ -922,7 +922,7 @@ uint8_t microBox::Cat_int(char* pParam)
     int8_t idx;
 
     idx = GetParamIdx(pParam);
-	if(idx != -1)
+	if(idx != ERROR)
     {
         PrintParam(idx);
         return 1;
