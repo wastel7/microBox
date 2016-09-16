@@ -231,7 +231,7 @@ void microBox::cmdParser()
         {
             HandleTab();
         }
-		else if(character != '\r' && bufferPosition < (MAX_CMD_BUF_SIZE-1))
+		else if(character != '\r' && bufferPosition < (MAX_CMD_BUF_SIZE - 1))
         {
 			if(character != '\n')
             {
@@ -333,7 +333,7 @@ void microBox::HandleTab()
 {
     int8_t idx, idx2;
 	char *pParam = nullptr;
-    uint8_t i, len = 0;
+	uint8_t i, length = 0;
     uint8_t parlen, matchlen, inlen;
 
 	for(i=0; i < bufferPosition; i++)
@@ -362,14 +362,14 @@ void microBox::HandleTab()
                 inlen = strlen(pParam);
                 if(matchlen > inlen)
                 {
-                    len = matchlen - inlen;
-					if((bufferPosition + len) < MAX_CMD_BUF_SIZE)
+					length = matchlen - inlen;
+					if((bufferPosition + length) < MAX_CMD_BUF_SIZE)
                     {
-                        strncat(cmdBuf, Params[idx].paramName + inlen, len);
-						bufferPosition += len;
+						strncat(cmdBuf, Params[idx].paramName + inlen, length);
+						bufferPosition += length;
                     }
                     else
-                        len = 0;
+						length = 0;
                 }
             }
         }
@@ -393,18 +393,18 @@ void microBox::HandleTab()
             inlen = strlen(pParam);
             if(matchlen > inlen)
             {
-                len = matchlen - inlen;
-				if((bufferPosition + len) < MAX_CMD_BUF_SIZE)
+				length = matchlen - inlen;
+				if((bufferPosition + length) < MAX_CMD_BUF_SIZE)
                 {
-                    strncat(cmdBuf, Cmds[idx].cmdName + inlen, len);
-					bufferPosition += len;
+					strncat(cmdBuf, Cmds[idx].cmdName + inlen, length);
+					bufferPosition += length;
                 }
                 else
-                    len = 0;
+					length = 0;
             }
         }
     }
-    if(len > 0)
+	if(length > 0)
     {
         Serial.print(pParam + inlen);
     }
@@ -922,7 +922,7 @@ uint8_t microBox::Cat_int(char* pParam)
     int8_t idx;
 
     idx = GetParamIdx(pParam);
-    if(idx != -1)
+	if(idx != -1)
     {
         PrintParam(idx);
         return 1;
