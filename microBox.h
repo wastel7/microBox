@@ -43,7 +43,7 @@ constexpr unsigned char TELNET_STATE_DO = 4;
 constexpr unsigned char TELNET_STATE_DONT = 5;
 constexpr unsigned char TELNET_STATE_CLOSE = 6;
 
-constexpr unsigned char ERROR;
+constexpr unsigned char ERROR = -1;
 
 typedef struct
 {

@@ -95,9 +95,7 @@ bool microBox::AddCommand(const char *cmdName, void (*cmdFunc)(char **param, uin
 
 bool microBox::isTimeout(unsigned long &lastTime, const unsigned long intervall)
 {
-	unsigned long milliseconds;
-
-	milliseconds = millis();
+	const unsigned long milliseconds = millis();
 	if(((milliseconds - lastTime) >= intervall) || (lastTime > milliseconds))
     {
 		lastTime = milliseconds;
@@ -217,7 +215,7 @@ void microBox::cmdParser()
         {
 			if(bufferPosition > 0)
             {
-				bufferPosition--;
+				--bufferPosition;
 				cmdBuf[bufferPosition] = 0;
 				Serial.write(character);
                 Serial.print(F(" \x1B[1D"));
@@ -416,14 +414,14 @@ void microBox::HistoryUp()
         return;
 
     if(historyCursorPos == -1)
-        historyCursorPos = historyWrPos-2;
+		historyCursorPos = historyWrPos - 2;
 
 	while(historyBuffer[historyCursorPos] != 0 && historyCursorPos > 0)
     {
-        historyCursorPos--;
+		--historyCursorPos;
     }
     if(historyCursorPos > 0)
-        historyCursorPos++;
+		++historyCursorPos;
 
 	strcpy(cmdBuf, historyBuffer+historyCursorPos);
     HistoryPrintHlpr();
@@ -447,9 +445,7 @@ void microBox::HistoryDown()
 
 void microBox::HistoryPrintHlpr()
 {
-	uint8_t length;
-
-	length = strlen(cmdBuf);
+	uint8_t length = strlen(cmdBuf);
 	for(uint8_t i = 0; i < bufferPosition; ++i)
         Serial.print('\b');
     Serial.print(cmdBuf);
@@ -462,13 +458,12 @@ void microBox::HistoryPrintHlpr()
 
 void microBox::AddToHistory(char *buffer)
 {
-	uint8_t length;
     int blockStart = 0;
 
-	length = strlen(buffer);
+	const uint8_t length; = strlen(buffer);
     if(historyBufSize > 0)
     {
-		if(historyWrPos+length + 1 >= historyBufSize)
+		if(historyWrPos + length + 1 >= historyBufSize)
         {
 			while(historyWrPos + length-blockStart >= historyBufSize)
             {
